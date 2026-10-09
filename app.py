@@ -1,9 +1,13 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
+from flask_mail import Mail, Message
 from datetime import datetime
 import json
 import os
-import config
+try:
+    import config
+except ImportError:
+    config = None
 
 app = Flask(__name__)
 
@@ -13,6 +17,15 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(os.getcwd(),
 app.config["SECRET_KEY"] = "smartbiz-secret-key-change-this"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
+
+# ---------- MAIL SETUP ----------
+app.config["MAIL_SERVER"] = "smtp.gmail.com"
+app.config["MAIL_PORT"] = 587
+app.config["MAIL_USE_TLS"] = True
+app.config["MAIL_USERNAME"] = config.MAIL_USERNAME if config else ""
+app.config["MAIL_PASSWORD"] = config.MAIL_PASSWORD if config else ""
+app.config["MAIL_RECIPIENT"] = config.MAIL_RECIPIENT if config else ""
+mail = Mail(app)
 
 
 # ---------- DATABASE MODELS ----------
@@ -105,6 +118,32 @@ def place_order():
     db.session.add(new_order)
     db.session.commit()
 
+    # Admin ko email bhejo
+    try:
+        email_body = f"""
+        🛒 NAYA ORDER AAYA HAI!
+
+        Order ID: #{new_order.id}
+        Customer: {name}
+        Phone: {phone}
+        Address: {address}
+        Items: {items}
+        Time: {new_order.timestamp.strftime('%d-%m-%Y %H:%M')}
+
+        Admin panel dekhein: http://127.0.0.1:5000/admin
+        """
+
+        msg = Message(
+            subject=f"🛒 New Order #{new_order.id} - {name}",
+            sender=app.config["MAIL_USERNAME"],
+            recipients=[app.config["MAIL_RECIPIENT"]],
+            body=email_body
+        )
+        mail.send(msg)
+        print(f"✅ Email sent for order #{new_order.id}")
+    except Exception as e:
+        print(f"❌ Email failed: {e}")
+
     return jsonify({
         "success": True,
         "message": f"Shukriya {name}! Aapka order mil gaya. Hum jald contact karenge.",
@@ -117,7 +156,9 @@ def admin_login():
     if request.method == "POST":
         username = request.form.get("username", "")
         password = request.form.get("password", "")
-        if username == config.ADMIN_USERNAME and password == config.ADMIN_PASSWORD:
+        admin_user = os.environ.get("ADMIN_USERNAME", config.ADMIN_USERNAME if config else "admin")
+        admin_pass = os.environ.get("ADMIN_PASSWORD", config.ADMIN_PASSWORD if config else "nafee2024")
+        if username == admin_user and password == admin_pass:
             session["admin_logged_in"] = True
             return redirect(url_for("admin"))
         else:
@@ -150,9 +191,11 @@ def update_order_status(order_id, status):
         db.session.commit()
     return redirect(url_for("admin"))
 
+
 # ---------- RUN ----------
 
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
