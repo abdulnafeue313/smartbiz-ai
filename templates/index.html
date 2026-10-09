@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartBiz AI Assistant</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="chat-box">
+        <div class="header">
+            🍽️ Abdul Nafeue Babar Biryani House
+            <a href="/admin" class="admin-link" target="_blank">Admin</a>
+        </div>
+        <div class="messages" id="messages">
+            <div class="message bot">Assalam-o-Alaikum! Kaise madad kar sakta hoon?</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Apna sawaal likhein..." 
+                   onkeypress="if(event.key==='Enter') sendMessage()">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+        <button class="order-btn" onclick="showOrderForm()">🛒 Order Now</button>
+    </div>
+
+    <!-- Order Form Modal -->
+    <div class="modal-overlay" id="orderModal">
+        <div class="modal">
+            <h2>🛒 Order Karein</h2>
+            <input type="text" id="orderName" placeholder="Aapka naam *">
+            <input type="text" id="orderPhone" placeholder="Phone number *">
+            <input type="text" id="orderAddress" placeholder="Address">
+            <textarea id="orderItems" placeholder="Kya order karna hai? *"></textarea>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeOrderForm()">Cancel</button>
+                <button class="btn-submit" onclick="submitOrder()">Order Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
